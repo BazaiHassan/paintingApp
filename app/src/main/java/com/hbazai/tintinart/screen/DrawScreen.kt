@@ -53,6 +53,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -76,9 +77,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.hbazai.tintinart.R
+import com.hbazai.tintinart.components.SaveBottomSheet
 import com.hbazai.tintinart.model.BrushButton
 import com.hbazai.tintinart.model.ColorButton
 import com.hbazai.tintinart.model.Line
+import com.hbazai.tintinart.utils.GlobalVariables.IMAGE_NAME
 import java.io.File
 import java.io.FileOutputStream
 
@@ -89,6 +92,10 @@ fun DrawScreen() {
     val context = LocalContext.current
 
     val imageBitmap = remember { ImageBitmap(1080, 1080) }
+
+    var isBottomSheetVisible by rememberSaveable {
+        mutableStateOf(false)
+    }
 
     var currentColor by remember {
         mutableStateOf(Color.Black)
@@ -176,6 +183,12 @@ fun DrawScreen() {
         mutableStateListOf<Line>()
     }
 
+    if (isBottomSheetVisible){
+        SaveBottomSheet(onclick = { isBottomSheetVisible=false }) {
+            saveCanvasAsImage(lines,imageBitmap, context)
+        }
+    }
+
     Column(
         modifier = Modifier
             .padding(2.dp)
@@ -207,7 +220,7 @@ fun DrawScreen() {
                 }
                 Button(
                     colors = ButtonDefaults.buttonColors(Color.Black),
-                    onClick = { saveCanvasAsImage(lines,imageBitmap, context) },
+                    onClick = { isBottomSheetVisible=true },
                     modifier = Modifier
                         .padding(3.dp)
                 ) {
@@ -229,9 +242,9 @@ fun DrawScreen() {
                     modifier = Modifier
                         .size(brushBtn.size)
                         .clickable {
-                            if(brushBtn.name=="Eraser"){
-                               lines.clear()
-                            }else{
+                            if (brushBtn.name == "Eraser") {
+                                lines.clear()
+                            } else {
                                 currentStrockWidth = brushBtn.strokValue
                             }
                         }
@@ -392,7 +405,7 @@ fun saveCanvasAsImage(lines: List<Line>, selectedImageBitmap: ImageBitmap?, cont
 
     // Save the Bitmap as a PNG file
     val path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-    val file = File(path, "painting_${System.currentTimeMillis()}.png")
+    val file = File(path, "${IMAGE_NAME}.png")
     FileOutputStream(file).use { outputStream ->
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
         outputStream.flush()
