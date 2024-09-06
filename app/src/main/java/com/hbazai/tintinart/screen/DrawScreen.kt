@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.graphics.Paint
+import android.graphics.Path
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -16,11 +17,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -66,6 +71,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.withSave
@@ -85,11 +92,36 @@ import com.hbazai.tintinart.utils.GlobalVariables.IMAGE_NAME
 import java.io.File
 import java.io.FileOutputStream
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun DrawScreen() {
 
     val context = LocalContext.current
+
+    // New from claude
+    var scale by remember { mutableFloatStateOf(1f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
+    val canvasBitmap = remember {
+        Bitmap.createBitmap(1080,1080,Bitmap.Config.ARGB_8888).asImageBitmap()
+    }
+
+    val path = remember {
+        Path()
+    }
+    val paint = remember {
+        Paint().apply {
+            isAntiAlias=true
+            isDither = true
+            style = Paint.Style.STROKE
+            strokeJoin = Paint.Join.ROUND
+            strokeCap = Paint.Cap.ROUND
+        }
+    }
+
+    val transformableState = rememberTransformableState { zoomChange, offsetChange, _ ->
+        scale *= zoomChange
+        offset += offsetChange
+    }
 
     val imageBitmap = remember { ImageBitmap(1080, 1080) }
 
@@ -118,9 +150,9 @@ fun DrawScreen() {
                     ImageDecoder.decodeBitmap(source)
                 }
                 selectedImageBitmap = bitmap.asImageBitmap()
+
             }
         }
-
 
 
     val colorButtonsTop = listOf(
@@ -183,9 +215,9 @@ fun DrawScreen() {
         mutableStateListOf<Line>()
     }
 
-    if (isBottomSheetVisible){
-        SaveBottomSheet(onclick = { isBottomSheetVisible=false }) {
-            saveCanvasAsImage(lines,imageBitmap, context)
+    if (isBottomSheetVisible) {
+        SaveBottomSheet(onclick = { isBottomSheetVisible = false }) {
+            saveCanvasAsImage(lines, imageBitmap, context)
         }
     }
 
@@ -220,7 +252,7 @@ fun DrawScreen() {
                 }
                 Button(
                     colors = ButtonDefaults.buttonColors(Color.Black),
-                    onClick = { isBottomSheetVisible=true },
+                    onClick = { isBottomSheetVisible = true },
                     modifier = Modifier
                         .padding(3.dp)
                 ) {
@@ -241,21 +273,29 @@ fun DrawScreen() {
                     contentDescription = "",
                     modifier = Modifier
                         .size(brushBtn.size)
-                        .clickable {
-                            if (brushBtn.name == "Eraser") {
-                                lines.clear()
-                            } else {
-                                currentStrockWidth = brushBtn.strokValue
+                        .combinedClickable(
+                            onClick = {
+                                if (brushBtn.name == "Eraser") {
+                                    if (lines.isNotEmpty()) {
+                                        lines.removeAt(lines.size - 1)
+                                    }
+                                } else {
+                                    currentStrockWidth = brushBtn.strokValue
+                                }
+                            },
+                            onLongClick = {
+                                if (brushBtn.name == "Eraser") {
+                                    lines.clear()
+                                }
                             }
-                        }
-                )
+                        ))
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Column(
-            modifier = Modifier.weight(1f) // Ensures this Column takes the remaining space
+            modifier = Modifier.weight(1f)
         ) {
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
@@ -301,7 +341,7 @@ fun DrawScreen() {
 
             Box(
                 modifier = Modifier
-                    .weight(1f) // Takes the remaining space in the column
+                    .weight(1f)
                     .fillMaxWidth()
                     .background(Color.White)
                     .border(width = 1.dp, color = Color.LightGray)
@@ -309,60 +349,66 @@ fun DrawScreen() {
                 Canvas(
                     modifier = Modifier
                         .fillMaxSize()
-                        .pointerInput(true) {
+                        .transformable(state = transformableState)
+                        .pointerInput(Unit) {
                             detectDragGestures { change, dragAmount ->
                                 change.consume()
+                                val scaledDragAmount = dragAmount / scale
+                                val scaledPosition = (change.position - offset) / scale
                                 val line = Line(
-                                    start = change.position - dragAmount,
-                                    end = change.position,
+                                    start = scaledPosition - scaledDragAmount,
+                                    end = scaledPosition,
                                     color = currentColor,
-                                    strokWidth = currentStrockWidth
+                                    strokWidth = currentStrockWidth / scale
                                 )
                                 lines.add(line)
                             }
                         }
                 ) {
-                    selectedImageBitmap?.let { image ->
-                        // Desired size
-                        val desiredWidth = 1000f
-                        val desiredHeight = 1000f
+                    scale(scale){
+                        translate(offset.x, offset.y) {
+                            selectedImageBitmap?.let { image ->
+                                // Desired size
+                                val desiredWidth = 1000f
+                                val desiredHeight = 1000f
 
-                        // Calculate the scale factor
-                        val scaleX = desiredWidth / image.width
-                        val scaleY = desiredHeight / image.height
+                                // Calculate the scale factor
+                                val scaleX = desiredWidth / image.width
+                                val scaleY = desiredHeight / image.height
 
-                        // Offset to position the image
-                        val imageOffset = Offset(10f, 10f)
+                                // Offset to position the image
+                                val imageOffset = Offset(10f, 10f)
 
-                        // Draw the scaled image
-                        drawIntoCanvas { canvas ->
-                            canvas.withSave {
-                                // Apply scaling and translation
-                                canvas.scale(scaleX, scaleY)
-                                canvas.translate(imageOffset.x / scaleX, imageOffset.y / scaleY)
+                                // Draw the scaled image
+                                drawIntoCanvas { canvas ->
+                                    canvas.withSave {
+                                        // Apply scaling and translation
+                                        canvas.scale(scaleX, scaleY)
+                                        canvas.translate(imageOffset.x / scaleX, imageOffset.y / scaleY)
 
-                                // Draw the image at the origin, which will be scaled and translated
-                                drawImage(image)
+                                        // Draw the image at the origin, which will be scaled and translated
+                                        drawImage(image)
+                                    }
+                                }
                             }
+                            lines.forEach { line ->
+                                drawLine(
+                                    color = line.color,
+                                    start = line.start,
+                                    end = line.end,
+                                    strokeWidth = line.strokWidth,
+                                    cap = StrokeCap.Round
+                                )
+                            }
+                            drawImage(imageBitmap)
                         }
                     }
-                    lines.forEach { line ->
-                        drawLine(
-                            color = line.color,
-                            start = line.start,
-                            end = line.end,
-                            strokeWidth = line.strokWidth,
-                            cap = StrokeCap.Round
-                        )
-                    }
 
-                    drawImage(imageBitmap)
                 }
             }
         }
 
     }
-
 
 
 }
