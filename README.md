@@ -14,13 +14,13 @@ Welcome to the repository for **My Android App**, an Android application built u
 ## Screenshots
 
 ### Home Screen
-![Home Screen](./images/screenshot_1.png)
+<img src="./images/screenshot_1.png" alt="Home Screen" width="300"/>
 
 ### Local File
-![Detail View](./images/screenshot_2.png)
+<img src="./images/screenshot_2.png" alt="Detail View" width="300"/>
 
 ### Save
-![Settings](./images/screenshot_3.png)
+<img src="./images/screenshot_3.png" alt="Settings" width="300"/>
 
 ## Getting Started
 
@@ -35,4 +35,4 @@ To get started with this project, clone the repository and import it into Androi
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/your-repo-name.git
+   git@github.com:BazaiHassan/paintingApp.git
