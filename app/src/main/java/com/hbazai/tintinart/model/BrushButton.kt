@@ -8,6 +8,6 @@ import androidx.compose.ui.unit.Dp
 data class BrushButton(
     val name:String,
     val icon:Painter,
-    val strokValue:Float,
+    val strokeValue:Float,
     val size:Dp,
 )

@@ -181,31 +181,31 @@ fun DrawScreen() {
         BrushButton(
             name = "Brush 20",
             icon = painterResource(id = R.drawable.ic_brush_1),
-            strokValue = 20f,
+            strokeValue = 20f,
             size = 40.dp
         ),
         BrushButton(
             name = "Brush 40",
             icon = painterResource(id = R.drawable.ic_brush_2),
-            strokValue = 40f,
+            strokeValue = 40f,
             size = 60.dp
         ),
         BrushButton(
             name = "Brush 80",
             icon = painterResource(id = R.drawable.ic_brush_3),
-            strokValue = 80f,
+            strokeValue = 80f,
             size = 60.dp
         ),
         BrushButton(
             name = "Pencil",
             icon = painterResource(id = R.drawable.ic_pencil),
-            strokValue = 5f,
+            strokeValue = 5f,
             size = 60.dp
         ),
         BrushButton(
             name = "Eraser",
             icon = painterResource(id = R.drawable.ic_erase),
-            strokValue = 30f,
+            strokeValue = 30f,
             size = 60.dp
         ),
     )
@@ -280,7 +280,7 @@ fun DrawScreen() {
                                         lines.removeAt(lines.size - 1)
                                     }
                                 } else {
-                                    currentStrockWidth = brushBtn.strokValue
+                                    currentStrockWidth = brushBtn.strokeValue
                                 }
                             },
                             onLongClick = {
@@ -359,7 +359,7 @@ fun DrawScreen() {
                                     start = scaledPosition - scaledDragAmount,
                                     end = scaledPosition,
                                     color = currentColor,
-                                    strokWidth = currentStrockWidth / scale
+                                    strokeWidth = currentStrockWidth / scale
                                 )
                                 lines.add(line)
                             }
@@ -396,7 +396,7 @@ fun DrawScreen() {
                                     color = line.color,
                                     start = line.start,
                                     end = line.end,
-                                    strokeWidth = line.strokWidth,
+                                    strokeWidth = line.strokeWidth,
                                     cap = StrokeCap.Round
                                 )
                             }
@@ -444,7 +444,7 @@ fun saveCanvasAsImage(lines: List<Line>, selectedImageBitmap: ImageBitmap?, cont
     val paint = android.graphics.Paint()
     lines.forEach { line ->
         paint.color = line.color.toArgb()
-        paint.strokeWidth = line.strokWidth
+        paint.strokeWidth = line.strokeWidth
         paint.strokeCap = android.graphics.Paint.Cap.ROUND
         canvas.drawLine(line.start.x, line.start.y, line.end.x, line.end.y, paint)
     }
