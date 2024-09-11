@@ -1,8 +1,9 @@
-# My Android App
+# TinTin Art Painting app
+### Developed by H.Bazai
 
 ## Overview
 
-Welcome to the repository for **My Android App**, an Android application built using Kotlin and Jetpack Compose. This app demonstrates modern Android development practices, featuring a clean and intuitive user interface, responsive design, and seamless navigation.
+Welcome to the repository for **TinTin Art App**, an Android application built using Kotlin and Jetpack Compose. This app demonstrates modern Android development practices, featuring a clean and intuitive user interface, responsive design, and seamless navigation.
 
 ## Features
 
